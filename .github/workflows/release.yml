@@ -1,0 +1,46 @@
+name: Semantic release
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x' # Use the latest Node.js version for release
+      - name: Install dependencies
+        run: |
+          cat package.json
+          npm install semantic-release
+          cat package.json
+      - name: Create .releaserc file
+        run: |
+          echo '{
+            "plugins": [
+              "@semantic-release/commit-analyzer",
+              "@semantic-release/release-notes-generator",
+              "@semantic-release/github"
+            ]
+          }' > .releaserc
+      - name: Verify integrity
+        run: npm audit signatures
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release --branches main
